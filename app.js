@@ -5,7 +5,7 @@ const bosszhipin = require('./bosszhaopin'),
     co = require('co'),
     _ = require("underscore");
 var Koa = require('koa');
-var Router = require('koa-router');
+var Router = require('./Router');
 var router = new Router();
 var app = new Koa();
 var cors = require('koa-cors');
@@ -17,7 +17,39 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 app.use(static(__dirname + '/ext-4.2.1.883'));
 
-router.get('/list', function(ctx) {
+var _ctx = { "data": "a" };
+function sss(ctx) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(function () {
+            resolve("sfdsfds");
+        }, 100);
+    }).then(function (data) {
+        ctx["data"] = data;
+    });
+}
+
+var ssss = async function (ctx) {
+
+    var data = await new Promise(function (resolve, reject) {
+        setTimeout(function () {
+            resolve("abc");
+        }, 100);
+    });
+    ctx["data"] = data;
+}
+
+Promise.resolve(ssss(_ctx)).then(function () {
+    console.log(_ctx["data"]);
+}).catch(function (err) {
+    console.dir(err);
+});
+
+
+
+
+
+
+router.get('/list', function (ctx) {
     var param = ctx.request.query;
     var page = param["page"],
         start = Number(param["start"]),
@@ -41,7 +73,7 @@ router.get('/list', function(ctx) {
     sortwhere[sort] = dir == "ASC" ? -1 : 1;
 
     console.dir(where);
-    return co(function*() {
+    return co(function* () {
         var db, data, count;
         db = yield MongoClient.connect(url);
         data = yield db.collection('infos').find(where).sort(sortwhere).skip(start).limit(limit).toArray();
@@ -50,12 +82,12 @@ router.get('/list', function(ctx) {
             "data": data,
             "total": count
         };
-    }).then(function(result) {
+    }).then(function (result) {
         ctx.body = {
             "total": result.total,
             "topics": result.data
         }
-    }, function(err) {
+    }, function (err) {
         console.dir(err);
         ctx.body = {
             "total": "0",
@@ -71,25 +103,25 @@ router.get('/list', function(ctx) {
             "total": "3520",
             "topics": infos
         };
-
+ 
     });*/
 
 });
 
 
 
-router.get('/spider', function(ctx) {
+router.get('/spider', function (ctx) {
     var param = ctx.request.query;
     var pages = param["pages"] || 5;
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
 
-        (async(pages) => {
+        (async (pages) => {
             try {
                 var db, data, total;
                 db = await MongoClient.connect(url);
                 if (_.find(await db.listCollections().toArray(), item => {
-                        return item.name == "infos";
-                    })) {
+                    return item.name == "infos";
+                })) {
                     await db.dropCollection('infos');
                 }
 
@@ -125,9 +157,9 @@ router.get('/spider', function(ctx) {
         })(pages);
 
 
-    }).then(function(result) {
+    }).then(function (result) {
         ctx.body = result;
-    }).catch(function(err) {
+    }).catch(function (err) {
         console.dir(err);
         ctx.body = {
             "success": false
@@ -135,25 +167,8 @@ router.get('/spider', function(ctx) {
     });
 });
 
-router.post('/test', function(ctx) {
-    var param = ctx.request.query;
-    var time = param["time"] || 100;
-    return new Promise(function(resolve, reject) {
-        setTimeout(function() {
-            resolve({
-                "success": true
-            });
-        }, Number(time));
 
-    }).then(function(result) {
-        ctx.body = result;
-    }).catch(function(err) {
-        console.dir(err);
-        ctx.body = {
-            "success": false
-        };
-    });
-});
+
 
 app.listen(3000);
 console.log('listening on port 3000');
@@ -184,37 +199,37 @@ return;
             })) {
             await db.dropCollection('infos');
         }
-
+ 
         data = (await bosszhipin.getDataPromise(pages)).map(row => {
             row["_from"] = "BOSS招聘";
             return row;
         });
-
+ 
         await db.collection('infos').insertMany(data);
-
+ 
         data = (await lagou.getDataPromise(pages)).map(row => {
             var newRow = _.pick(row, 'positionName', 'salary', 'city', 'workYear', 'education', 'company', 'industryField', 'financeStage', 'companySize');
             newRow["_from"] = "lagou";
             return newRow;
         });
-
+ 
         await db.collection('infos').insertMany(data);
-
+ 
         infos = await db.collection('infos').find({}).toArray();
         console.dir(infos);
         console.dir(await db.collection('infos').count());
-
+ 
         db.close();
     } catch (ex) {
         console.dir(ex);
     }
-
+ 
 })(5);
 */
 
 
 
-(async() => {
+(async () => {
     try {
         var db, infos, data;
         db = await MongoClient.connect(url);
