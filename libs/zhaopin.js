@@ -22,16 +22,16 @@ var _baseurl = "http://sou.zhaopin.com/jobs/searchresult.ashx?jl=" + urlencode("
 var config_json = "zhaoping_cofig.json";
 var _cjson = null;
 var init = async function () {
-       debug("_cjson:%O",_cjson);
-    if (_cjson&&_.has(_cjson,"薪资")) return;
-     var savepath = path.join(__dirname, config_json), _json;
+    debug("_cjson:%O", _cjson);
+    if (_cjson && _.has(_cjson, "薪资")) return;
+    var savepath = path.join(__dirname, config_json), _json;
     if (await fs.exists(savepath)) _json = JSON.parse(await fs.readFile(savepath, { encoding: 'utf-8' }));
     else {
         _json = await getConfigJson(_baseurl);
         await fs.writeFile(savepath, JSON.stringify(_json, null, 4), 'utf8');
     }
     _cjson = _json;
-    debug("_cjson:%O",_cjson);
+    debug("_cjson:%O", _cjson);
 }
 
 

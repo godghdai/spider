@@ -36,10 +36,10 @@ module.exports = function (app) {
 
     });
 
-    router.get('/listtwo', async (ctx) => {
-
-        var db = await MongoClient.connect(url);
-        var data = await db.collection('infos').aggregate([{
+    router.get('/listtwo', function* (next) {
+        var ctx = this;
+        var db = yield MongoClient.connect(url);
+        var data = yield db.collection('infos').aggregate([{
             $match: {}
         }, {
             $group: {
