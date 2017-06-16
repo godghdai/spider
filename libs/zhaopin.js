@@ -6,46 +6,84 @@ var request = require('superagent'),
     _ = require("underscore"),
     fs = require('mz/fs'),
     debug = require('debug')('spider:zhaopin'),
-    path = require('path');
-
+    path = require('path'),
+    { URLSearchParams } = require('url');
 
 var bosszhipin = require('./bosszhaopin');
 //set debug=spider:*  set debug=null
-
 /* 
 thenifyAll = require('thenify-all'),
 fs = thenifyAll(require('fs'), {}, [
     'readFile',
     'writeFile'
 ]);*/
-//http://sou.zhaopin.com
-var url = "http://sou.zhaopin.com/jobs/searchresult.ashx?jl=" + urlencode("全国") + "&kw=nodejs&isadv=0&p=3";//北京+上海+深圳+广州
 
-
-/*
+var _baseurl = "http://sou.zhaopin.com/jobs/searchresult.ashx?jl=" + urlencode("北京+上海+深圳+广州") + "&kw=nodejs&isadv=0&p=3";
 var config_json = "zhaoping_cofig.json";
-(async () => {
-    var savepath = path.join(__dirname, config_json), _json;
+var _cjson = null;
+var init = async function () {
+       debug("_cjson:%O",_cjson);
+    if (_cjson&&_.has(_cjson,"薪资")) return;
+     var savepath = path.join(__dirname, config_json), _json;
     if (await fs.exists(savepath)) _json = JSON.parse(await fs.readFile(savepath, { encoding: 'utf-8' }));
     else {
-        _json = await getJson();
+        _json = await getConfigJson(_baseurl);
         await fs.writeFile(savepath, JSON.stringify(_json, null, 4), 'utf8');
     }
-    var page = await bosszhipin.getDataPromise();
-
-    console.dir(page);
-})().catch(err => {
-    console.dir(err);
-});*/
+    _cjson = _json;
+    debug("_cjson:%O",_cjson);
+}
 
 
+var getUrl = async function (conf) {
+    //参照zhanping_cofig.json
+    var config = {
+        "page": 1,
+        "城市": "全国",//北京+上海+深圳+广州
+        "薪资": "不限",
+        "公司性质": "不限",
+        "学历": "不限",
+        "工作经验": "不限",
+        "职位类型": "不限",
+        "发布时间": "不限"
+    }
+    _.extend(config, conf || {});
+
+    await init();
+    var params = new URLSearchParams();
+    for (key in config) {
+        switch (key) {
+            case "page":
+                params.append('p', config[key]);
+                break;
+            case "薪资":
+                _.each(_cjson[key][config[key]], function (value, key, list) {
+                    params.append(key, value);
+                })
+                break;
+            case "城市":
+                params.append("jl", urlencode(config[key]));
+                break;
+            default:
+                var k = _.keys(_cjson[key][config[key]])[0];
+                console.log(k);
+                params.append(k, _cjson[key][config[key]][k]);
+                break;
+        }
+    }
+    return `http://sou.zhaopin.com/jobs/searchresult.ashx?kw=nodejs&isadv=0&${params.toString()}`;
+}
+
+//招聘信息有点少，3页以后没数据
 var getPagesJson = function () {
     var result = [];
     return new Promise((resolve, reject) => {
         (async () => {
-            var page = 1, data;
+            var page = 1, data, url;
             while (true) {
-                data = await getPageJson(page);
+                url = await getUrl({ "page": page });
+                debug('url: %s', url);
+                data = await getPageJson(url);
                 result = result.concat(data);
                 if (data.length == 0) break;
                 page++;
@@ -57,11 +95,10 @@ var getPagesJson = function () {
     });
 }
 
-
-var getPageJson = function (page) {
+var getPageJson = function (url) {
 
     return new Promise((resolve, reject) => {
-        request.get("http://sou.zhaopin.com/jobs/searchresult.ashx?jl=" + urlencode("全国") + "&kw=nodejs&isadv=0&p=" + page).end(function (err, res) {
+        request.get(url).end(function (err, res) {
             var result = [];
             if (err) {
                 debug('err: %O', err);
@@ -101,7 +138,7 @@ var getPageJson = function (page) {
 }
 
 
-var getJson = function () {
+var getConfigJson = function (url) {
     return new Promise((resolve, reject) => {
         request.get(url).end(function (err, res) {
             var result = {};
