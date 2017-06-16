@@ -35,8 +35,8 @@ Ext.onReady(function () {
             simpleSortMode: true
         },
         sorters: [{
-            property: 'city',
-            direction: 'DESC'
+            property: 'salary',
+            direction: 'ASC'//DESC
         }]
     });
 
@@ -160,7 +160,7 @@ Ext.onReady(function () {
         }, {
             text: "待遇",
             dataIndex: 'salary',
-            width: 100,
+            width: 60,
             sortable: true
         }, {
             text: "城市",
@@ -168,7 +168,13 @@ Ext.onReady(function () {
             width: 50,
             align: 'left',
             sortable: true
-        }, {
+        },{
+            id: 'company',
+            text: "公司",
+            dataIndex: 'company',
+            width: 150,
+            sortable: true
+        },{
             text: "经验",
             dataIndex: 'workYear',
             width: 50,
@@ -180,20 +186,14 @@ Ext.onReady(function () {
             width: 50,
             sortable: true
         }, {
-            id: 'company',
-            text: "公司",
-            dataIndex: 'company',
-            width: 150,
-            sortable: true
-        }, {
             id: 'industryField',
-            text: "industryField",
+            text: "行业领域",
             dataIndex: 'industryField',
             width: 150,
             sortable: true
         }, {
             id: 'financeStage',
-            text: "financeStage",
+            text: "融资阶段",
             dataIndex: 'financeStage',
             width: 150,
             sortable: true

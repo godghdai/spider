@@ -29,7 +29,7 @@ module.exports = function (app) {
                 "sum": -1
             }
         }]).toArray();
-
+        db.close();
         ctx.body = {
             datas: data
         };
@@ -57,7 +57,7 @@ module.exports = function (app) {
                 "sum": -1
             }
         }]).toArray();
-
+        db.close();
 
         ctx.body = {
             datas: data.map((x) => {
@@ -90,7 +90,7 @@ module.exports = function (app) {
                 "sum": -1
             }
         }]).toArray();
-
+        db.close();
         ctx.body = {
             datas: data.map((x) => {
                 return _.extend(x, x["_id"]);
@@ -123,12 +123,18 @@ module.exports = function (app) {
 
         sortwhere[sort] = dir == "ASC" ? -1 : 1;
 
-        debug("list where:%O",where);
+        if (sort == "salary") {
+            sortwhere = {};
+            sortwhere["s_sort"] = dir == "ASC" ? -1 : 1;
+        }
+
+        debug("list where:%O", sortwhere);
         return co(function* () {
             var db, data, count;
             db = yield MongoClient.connect(url);
             data = yield db.collection('infos').find(where).sort(sortwhere).skip(start).limit(limit).toArray();
             count = yield db.collection('infos').find(where).count();
+            db.close();
             return {
                 "data": data,
                 "total": count
@@ -139,7 +145,7 @@ module.exports = function (app) {
                 "topics": result.data
             }
         }, function (err) {
-            debug("list err:%O",err);
+            debug("list err:%O", err);
             ctx.body = {
                 "total": "0",
                 "topics": []
@@ -153,6 +159,27 @@ module.exports = function (app) {
     router.get('/spider', function (ctx) {
         var param = ctx.request.query;
         var pages = param["pages"] || 5;
+
+        function salaryOpt(row) {
+            var salary = row["salary"];
+            while (true) {
+                //15k-30k
+                if (/(\d+)k-(\d+)k/i.test(salary)) {
+                    row["s_sort"] = Number(RegExp.$1) * 1000;
+                    break;
+                }
+                //15000-30000
+                if (/(\d+)-(\d+)/.test(salary)) {
+                    row["s_sort"] = Number(RegExp.$1);
+                    row["salary"] = `${parseInt(Number(RegExp.$1) / 1000)}k-${parseInt(Number(RegExp.$2) / 1000)}k`;
+                    break;
+                }
+                row["s_sort"] = 0;
+                row["salary"] = row["salary"].toLowerCase();
+                break;
+            }
+        }
+
         return new Promise(function (resolve, reject) {
 
             (async (pages) => {
@@ -167,15 +194,18 @@ module.exports = function (app) {
 
                     data = (await bosszhipin.getDataPromise(pages)).map(row => {
                         row["_from"] = "BOSS招聘";
+                        salaryOpt(row);
                         return row;
                     });
 
                     await db.collection('infos').insertMany(data);
 
                     data = (await lagou.getDataPromise(pages)).map(row => {
-                        var newRow = _.pick(row, 'positionName', 'salary', 'city', 'workYear', 'education', 'company', 'industryField', 'financeStage', 'companySize');
+                        var newRow = _.pick(row, 'positionName', 'salary', 'city', 'workYear', 'education', 'industryField', 'financeStage', 'companySize');
+                        newRow["company"] = row["companyFullName"];
                         newRow["_from"] = "拉勾";
                         newRow["url"] = `https://www.lagou.com/jobs/${row["positionId"]}.html`;
+                        salaryOpt(newRow);
                         return newRow;
                     });
 
@@ -184,6 +214,7 @@ module.exports = function (app) {
 
                     data = (await zhaopin.getDataPromise(pages)).map(row => {
                         row["_from"] = "智联";
+                        salaryOpt(row);
                         return row;
                     });
 
@@ -199,7 +230,7 @@ module.exports = function (app) {
                         "total": total
                     });
                 } catch (ex) {
-                    debug("spider err:%O",err);
+                    debug("spider err:%O", err);
                     reject(ex);
                 }
 
@@ -209,7 +240,7 @@ module.exports = function (app) {
         }).then(function (result) {
             ctx.body = result;
         }).catch(function (err) {
-            debug("spider2 err:%O",err);
+            debug("spider2 err:%O", err);
             ctx.body = {
                 "success": false
             };

@@ -60,12 +60,11 @@ Ext.define('spider.ux.TotalWin', {
                     root: 'datas'
                 }
             },
-            fields: ['from','city','sum']
+            fields: ['from', 'city', 'sum']
         });
 
         var grid2 = Ext.create('Ext.grid.Panel', {
             store: store2,
-            title: '来源城市职位统计',
             disableSelection: false,
             loadMask: true,
             region: 'center',
@@ -80,7 +79,7 @@ Ext.define('spider.ux.TotalWin', {
                 dataIndex: 'from',
                 width: 150,
                 sortable: false
-            },{
+            }, {
                 text: "城市",
                 dataIndex: 'city',
                 width: 150,
@@ -109,7 +108,7 @@ Ext.define('spider.ux.TotalWin', {
                     root: 'datas'
                 }
             },
-            fields: ['city','salary','sum']
+            fields: ['city', 'salary', 'sum']
         });
 
         var grid3 = Ext.create('Ext.grid.Panel', {
@@ -129,7 +128,7 @@ Ext.define('spider.ux.TotalWin', {
                 dataIndex: 'city',
                 width: 150,
                 sortable: false
-            },{
+            }, {
                 text: "工资",
                 dataIndex: 'salary',
                 width: 150,
@@ -153,7 +152,44 @@ Ext.define('spider.ux.TotalWin', {
             {
                 xtype: 'tabpanel',
                 region: 'center',
-                items: [grid,grid2,grid3]
+                items: [grid, {
+                    title: '来源城市职位统计',
+                    tbar: ['-',{
+                        xtype: 'combo',
+                        fieldLabel: '来源',
+                        emptyText: "所有",
+                        labelWidth: 30,
+                        width: 100,
+                        store: Ext.create('Ext.data.Store', {
+                            fields: ['abbr', 'name'],
+                            data: [{
+                                "abbr": "BJ",
+                                "name": "所有"
+                            }, {
+                                "abbr": "BJ",
+                                "name": "BOSS招聘"
+                            }, {
+                                "abbr": "SH",
+                                "name": "拉勾"
+                            }, {
+                                "abbr": "GZ",
+                                "name": "智联"
+                            }]
+                        }),
+                        queryMode: 'local',
+                        displayField: 'name',
+                        valueField: 'abbr',
+                        listeners: {
+                            'select': function (combo, records, eOpts) {
+                                _city = records[0]["data"]["name"];
+                                if (_city == "所有") _city = "";
+                                store.loadPage(1);
+                            }
+                        }
+                    }],
+                    layout: 'border',
+                    items: [grid2]
+                }, grid3]
             }
         ]
         me.callParent();
