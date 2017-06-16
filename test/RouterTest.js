@@ -134,7 +134,7 @@ describe('Router Test', function () {
 
     it('generater函数写法', function (done) {
 
-       router.get('/generater', function* (next) {
+        router.get('/generater', function* (next) {
 
             this.body = yield new Promise(function (resolve, reject) {
                 setTimeout(function () {
@@ -166,7 +166,7 @@ describe('Router Test', function () {
             });
     });
 
-        
+
 
 
 });
