@@ -24,7 +24,7 @@ function getPromise(pagenum = 3, retrytime = 3) {
 						'Host': 'www.lagou.com',
 						'Origin': 'http://www.lagou.com',
 						'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-						'Referer': 'http://www.lagou.com',
+						'Referer': 'https://www.lagou.com/jobs/list_Node.js?city=%E5%85%A8%E5%9B%BD&cl=false&fromSearch=true&labelWords=&suginput=',
 						'Proxy-Connection': 'keep-alive',
 						'X-Anit-Forge-Code': '0',
 						'X-Anit-Forge-Token': "None",
@@ -35,7 +35,7 @@ function getPromise(pagenum = 3, retrytime = 3) {
 							return;
 						}
 						var result = JSON.parse(res.text);
-						retry(null, result.content.positionResult.result);
+						retry(null, result.content.positionResult.result||[]);
 					});
 
 				}, function (err, result) {
